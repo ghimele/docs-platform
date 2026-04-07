@@ -21,6 +21,8 @@ automatically with a clean initial commit.
 
 **On Azure DevOps (or manual):**
 
+Bash (macOS / Linux / WSL):
+
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/yourorg/docs-platform/main/scripts/init-docs.sh)
 ```
@@ -32,6 +34,22 @@ git clone https://github.com/yourorg/docs-platform
 cd your-target-repo
 bash ../docs-platform/scripts/init-docs.sh
 ```
+
+PowerShell (Windows):
+
+```powershell
+git clone https://github.com/yourorg/docs-platform
+cd your-target-repo
+..\docs-platform\scripts\init-docs.ps1
+```
+
+You can override the platform repo URL and branch via parameters:
+
+```powershell
+..\docs-platform\scripts\init-docs.ps1 -PlatformRepo 'https://dev.azure.com/yourorg/docs-platform' -Ref 'v2'
+```
+
+Or via environment variables (`$env:DOCS_PLATFORM_REPO`, `$env:DOCS_PLATFORM_REF`).
 
 ### Existing repository (sync templates)
 
@@ -68,8 +86,9 @@ docs-platform/
 │       ├── security/
 │       └── templates/
 ├── scripts/
-│   ├── init-docs.sh   # first-time scaffold
-│   └── sync-docs.sh   # update templates in existing repos
+│   ├── init-docs.sh    # first-time scaffold (bash)
+│   ├── init-docs.ps1   # first-time scaffold (PowerShell)
+│   └── sync-docs.sh    # update templates in existing repos
 └── agent/
     ├── doc-scaffold.prompt.md   # Copilot agent: scaffold a new repo
     └── doc-sync.prompt.md       # Copilot agent: sync templates
