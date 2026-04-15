@@ -4,7 +4,10 @@
     Scaffold the standard documentation structure into a new repo.
 .DESCRIPTION
     PowerShell equivalent of init-docs.sh for Windows.
-    Run from the root of your target repository.
+    Run from the root of your target folder.
+.PARAMETER PlatformPath
+    Override the local docs-platform source path. When omitted, the script
+    reuses the checkout it is running from if possible.
 .PARAMETER PlatformRepo
     Override the platform repo URL (default from $env:DOCS_PLATFORM_REPO or GitHub).
 .PARAMETER Ref
@@ -12,6 +15,7 @@
 #>
 [CmdletBinding()]
 param(
+    [string]$PlatformPath,
     [string]$PlatformRepo = ($env:DOCS_PLATFORM_REPO, 'https://github.com/yourorg/docs-platform' | Where-Object { $_ } | Select-Object -First 1),
     [string]$Ref          = ($env:DOCS_PLATFORM_REF, 'main' | Where-Object { $_ } | Select-Object -First 1)
 )
@@ -25,20 +29,31 @@ function Write-Colour {
     Write-Host $Text -ForegroundColor $Colour -NoNewline
 }
 
+function Test-GitRepo {
+    param([string]$Path)
+
+    try {
+        git -C $Path rev-parse --git-dir 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        return $false
+    }
+}
+
 Write-Host 'docs-platform init' -ForegroundColor Cyan
 Write-Host "Platform repo : $PlatformRepo @ $Ref"
 Write-Host "Target repo   : $(Get-Location)"
 Write-Host ''
 
-# ── Check we are inside a git repo ───────────────────────────────────────────
-try {
-    git rev-parse --git-dir 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw }
+# ── Check target folder ──────────────────────────────────────────────────────
+if (Test-GitRepo (Get-Location).Path) {
+    Write-Host 'Target folder type: git repository'
 }
-catch {
-    Write-Error 'Error: not inside a git repository. Run this from your repo root.'
-    exit 1
+else {
+    Write-Host 'Warning: target folder is not a git repository. Continuing anyway.' -ForegroundColor Yellow
 }
+Write-Host ''
 
 # ── Check docs/ does not already exist ───────────────────────────────────────
 if (Test-Path -Path './docs' -PathType Container) {
@@ -49,20 +64,41 @@ if (Test-Path -Path './docs' -PathType Container) {
 }
 
 # ── Clone platform repo ─────────────────────────────────────────────────────
-$TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "docs-platform-$([guid]::NewGuid().ToString('N'))"
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$LocalPlatformRoot = Split-Path -Parent $ScriptDir
+$platformSource = $null
+$TmpDir = $null
 try {
-    Write-Host 'Cloning docs-platform...'
-    git clone --quiet --depth 1 --branch $Ref $PlatformRepo $TmpDir
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error 'Failed to clone docs-platform repository.'
-        exit 1
+    if (-not $PlatformPath -and $env:DOCS_PLATFORM_PATH) {
+        $PlatformPath = $env:DOCS_PLATFORM_PATH
     }
+
+    if ($PlatformPath -and (Test-Path (Join-Path $PlatformPath 'scaffold') -PathType Container)) {
+        $platformSource = $PlatformPath
+        Write-Host "Using docs-platform source from PlatformPath: $platformSource"
+    }
+    elseif (Test-Path (Join-Path $LocalPlatformRoot 'scaffold') -PathType Container) {
+        $platformSource = $LocalPlatformRoot
+        Write-Host "Using local docs-platform checkout: $platformSource"
+    }
+    else {
+        $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "docs-platform-$([guid]::NewGuid().ToString('N'))"
+        Write-Host 'Cloning docs-platform...'
+        git clone --quiet --depth 1 --branch $Ref $PlatformRepo $TmpDir
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error 'Failed to clone docs-platform repository.'
+            exit 1
+        }
+
+        $platformSource = $TmpDir
+    }
+    Write-Host ''
 
     # ── Copy root files (skip if already present) ────────────────────────────
     Write-Host 'Copying root files...'
     $rootFiles = @('AGENTS.md', 'CONTRIBUTING.md', 'CHANGELOG.md', '.markdownlint.json')
     foreach ($f in $rootFiles) {
-        $source = Join-Path $TmpDir "scaffold/$f"
+        $source = Join-Path $platformSource "scaffold/$f"
         $dest   = Join-Path '.' $f
         if (-not (Test-Path $dest)) {
             if (Test-Path $source) {
@@ -80,7 +116,7 @@ try {
 
     # ── Copy docs/ tree ──────────────────────────────────────────────────────
     Write-Host 'Copying docs/ structure...'
-    $scaffoldDocs = Join-Path $TmpDir 'scaffold/docs'
+    $scaffoldDocs = Join-Path $platformSource 'scaffold/docs'
     if (Test-Path $scaffoldDocs -PathType Container) {
         # Copy every item, skipping files that already exist
         New-Item -Path './docs' -ItemType Directory -Force | Out-Null
@@ -102,15 +138,15 @@ try {
     else {
         # Fallback: scaffold root IS the docs content (minus root files)
         New-Item -Path './docs' -ItemType Directory -Force | Out-Null
-        $excludeFiles = $rootFiles + @('STYLE.md', 'README.md')
-        Get-ChildItem -Path (Join-Path $TmpDir 'scaffold') -Exclude $excludeFiles | ForEach-Object {
+        $excludeFiles = $rootFiles + @('README.md')
+        Get-ChildItem -Path (Join-Path $platformSource 'scaffold') -Exclude $excludeFiles | ForEach-Object {
             $targetPath = Join-Path './docs' $_.Name
             if (-not (Test-Path $targetPath)) {
                 Copy-Item -Path $_.FullName -Destination $targetPath -Recurse
             }
         }
         # Copy scaffold README.md into docs/ as the index
-        $scaffoldReadme = Join-Path $TmpDir 'scaffold/README.md'
+        $scaffoldReadme = Join-Path $platformSource 'scaffold/README.md'
         $docsReadme     = Join-Path './docs' 'README.md'
         if ((Test-Path $scaffoldReadme) -and -not (Test-Path $docsReadme)) {
             Copy-Item -Path $scaffoldReadme -Destination $docsReadme
@@ -119,12 +155,30 @@ try {
     Write-Host '  created  docs/' -ForegroundColor Green
 
     # ── Store platform version reference ─────────────────────────────────────
-    $commit  = (git -C $TmpDir rev-parse HEAD).Trim()
+    if (Test-GitRepo $platformSource) {
+        $platformRepoValue = (git -C $platformSource config --get remote.origin.url).Trim()
+        if (-not $platformRepoValue) {
+            $platformRepoValue = $platformSource
+        }
+
+        $platformRefValue = (git -C $platformSource branch --show-current).Trim()
+        if (-not $platformRefValue) {
+            $platformRefValue = $Ref
+        }
+
+        $commit  = (git -C $platformSource rev-parse HEAD).Trim()
+    }
+    else {
+        $platformRepoValue = if ($PlatformPath) { $PlatformPath } else { $PlatformRepo }
+        $platformRefValue = $Ref
+        $commit = 'unknown'
+    }
+
     $synced  = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
     $versionContent = @"
 # This file is managed by docs-platform. Do not edit manually.
-repo=$PlatformRepo
-ref=$Ref
+repo=$platformRepoValue
+ref=$platformRefValue
 commit=$commit
 synced=$synced
 "@
@@ -134,7 +188,7 @@ synced=$synced
 }
 finally {
     # ── Cleanup temp dir ─────────────────────────────────────────────────────
-    if (Test-Path $TmpDir) {
+    if ($TmpDir -and (Test-Path $TmpDir)) {
         Remove-Item -Path $TmpDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 }

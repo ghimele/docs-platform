@@ -52,25 +52,38 @@ Not every change needs the same ceremony.
 On GitHub, use `docs-platform` as a template repository to start with a clean
 documentation scaffold.
 
-For manual setup, clone `docs-platform` next to the target repo and run the init
-script from the target repo root.
+For manual setup, clone `docs-platform` next to the target folder and run the
+init script from that folder. The init scripts now reuse the local
+`docs-platform` checkout directly, so they do not re-clone the platform repo.
+The target folder does not need to be a git repository.
+
+Bash (macOS / Linux / WSL):
+
+```bash
+git clone https://github.com/yourorg/docs-platform
+cd your-target-folder
+../docs-platform/scripts/init-docs.sh
+```
 
 PowerShell (Windows):
 
 ```powershell
 git clone https://github.com/yourorg/docs-platform
-cd your-target-repo
+cd your-target-folder
 ..\docs-platform\scripts\init-docs.ps1
 ```
 
 Optional overrides:
 
+`PlatformRepo` and `Ref` are used when the script must fetch a remote platform
+copy. For local usage, the script prefers the checkout it is running from.
+
 ```powershell
 ..\docs-platform\scripts\init-docs.ps1 -PlatformRepo 'https://dev.azure.com/yourorg/docs-platform' -Ref 'main'
 ```
 
-Environment variables `DOCS_PLATFORM_REPO` and `DOCS_PLATFORM_REF` are also
-supported.
+Environment variables `DOCS_PLATFORM_REPO`, `DOCS_PLATFORM_REF`, and
+`DOCS_PLATFORM_PATH` are also supported.
 
 ### Existing repository
 

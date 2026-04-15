@@ -11,6 +11,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- `init-docs.sh` and `init-docs.ps1` now support scaffolding into a plain folder without requiring `.git`
+- Init scripts now reuse the local `docs-platform` checkout when run from a manual clone instead of re-cloning the platform repo
+- Init scripts now support explicit local source override via `DOCS_PLATFORM_PATH` / `-PlatformPath`
 - Added brownfield (existing codebase) guidance across scaffold and agent prompts
   - `AGENTS.md`: new "Working in an existing codebase (brownfield)" subsection under Rules for Agents — scan for existing artefacts, read existing code, account for backward compatibility, acknowledge what already works, prefer incremental change
   - `agent/spec-generate.prompt.md`: step 2 now scans for existing specs/code; interview adds "What exists today?" question; Background section includes current-state paragraph; Requirements include migration for contract changes
@@ -24,7 +27,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   - `agent/rfc-generate.prompt.md`: new step 1 confirms XL-tier applicability before generating an RFC
   - `agent/spec-tasks.prompt.md`: prerequisites now note that task decomposition is optional for M-tier work
 - Added conciseness guidance across scaffold and agent prompts
-  - `STYLE.md`: new section 3 "Conciseness" with rules (one idea per paragraph, lead with conclusion, delete filler, prefer tables and Mermaid, proportional sections, omit empty optional sections) and length-guideline table (FUNC 1–3 pp, TECH 2–4 pp, Architecture 2–5 pp, Design 1–3 pp, ADR 0.5–1 p, RFC 1–2 pp); all subsequent sections renumbered (+1)
+  - `STYLE.md`: new section 3 "Conciseness" with rules
+    (one idea per paragraph, lead with conclusion, delete filler, prefer tables
+    and Mermaid, proportional sections, omit empty optional sections) and
+    length-guideline table (FUNC 1–3 pp, TECH 2–4 pp, Architecture 2–5 pp,
+    Design 1–3 pp, ADR 0.5–1 p, RFC 1–2 pp); all subsequent sections
+    renumbered (+1)
   - Agent prompts (`spec-generate`, `spec-plan`, `spec-tasks`, `rfc-generate`, `rfc-resolve`): added conciseness note referencing STYLE.md section 3 with per-doc-type page targets
   - Cross-file references updated: `CONTRIBUTING.md`, `templates/spec.md`, `glossary.md` now point to renumbered STYLE.md sections
   - **Breaking:** STYLE.md section numbers shifted by one (e.g. Spec Lifecycle is now section 5, not 4); consuming repos referencing section numbers should update
