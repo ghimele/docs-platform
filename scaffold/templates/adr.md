@@ -1,9 +1,9 @@
-# ADR-NNN: Title
+# ADR-NN: Title
 
 **Status:** Proposed  
 **Last updated:** YYYY-MM-DD  
 **Owner:** <!-- name or team -->  
-**Related ADRs:** <!-- ADR-NNN, ADR-NNN or remove line -->  
+**Related ADRs:** <!-- ADR-NN, ADR-NN or remove line -->  
 
 ---
 
@@ -91,9 +91,9 @@
 ## 6. Constraints & Invariants
 
 <!-- List rules that must always hold as a result of this decision.
-     Use numbered codes: ADR-NNN-I1, ADR-NNN-I2, etc. -->
+     Use numbered codes: ADR-NN-I1, ADR-NN-I2, etc. -->
 
-- **NNN-I1** <!-- invariant description -->
+- **NN-I1** <!-- invariant description -->
 
 ---
 

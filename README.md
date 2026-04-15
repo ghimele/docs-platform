@@ -1,39 +1,59 @@
 # docs-platform
 
-Shared documentation structure, templates, and conventions for all projects.
+Shared documentation scaffold, templates, and Copilot prompts for spec-driven
+development.
 
-This repository is the single source of truth for:
+This repository is the source of truth for:
 
-- Documentation folder structure
-- Document templates (ADR, RFC, architecture, design, spec)
-- Style and formatting conventions
-- Agent instructions scaffold
+- Documentation structure copied into consuming repos
+- Templates for ADRs, RFCs, architecture, design, and specs
+- Formatting and lifecycle conventions
+- Agent prompts that support the RFC -> ADR -> spec -> plan -> tasks workflow
+
+---
+
+## Latest changes
+
+Recent platform updates include:
+
+- Brownfield guidance: agents should scan existing docs and code first, prefer
+    updating existing artefacts, and account for backward compatibility
+- Workflow sizing tiers: `S`, `M`, `L`, `XL` now determine how much process a
+    change needs
+- Expanded prompt set: RFC generation/resolution plus spec generation, planning,
+    and task decomposition
+- Spec lifecycle and traceability: review state, approval fields, acceptance
+    criteria tables, tasks, and implementation tracking
+- Clear boundary between technical specs and design docs: technical specs define
+    public contracts, design docs cover internals
+- Removal of `docs/api/`: public contracts now live in `docs/specs/technical/`
+
+See [CHANGELOG.md](CHANGELOG.md) for full details and migration notes.
+
+---
+
+## Workflow at a glance
+
+Not every change needs the same ceremony.
+
+| Tier | When to use | Flow |
+| ---- | ----------- | ---- |
+| `S` | Patch, typo, config tweak, no behavioural change | PR only |
+| `M` | Focused feature, single component, small scope | Spec -> code |
+| `L` | Multi-AC or cross-component change | Spec -> tasks -> code |
+| `XL` | Open question, new system, cross-cutting decision | RFC -> ADR -> spec -> plan -> tasks -> code |
 
 ---
 
 ## How to use this repo
 
-### New repository (first-time setup)
+### New repository
 
-**On GitHub:** this repo is marked as a template. When creating a new repo,
-select `docs-platform` as the repository template. The full scaffold is copied
-automatically with a clean initial commit.
+On GitHub, use `docs-platform` as a template repository to start with a clean
+documentation scaffold.
 
-**On Azure DevOps (or manual):**
-
-Bash (macOS / Linux / WSL):
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/yourorg/docs-platform/main/scripts/init-docs.sh)
-```
-
-Or clone this repo and run locally:
-
-```bash
-git clone https://github.com/yourorg/docs-platform
-cd your-target-repo
-bash ../docs-platform/scripts/init-docs.sh
-```
+For manual setup, clone `docs-platform` next to the target repo and run the init
+script from the target repo root.
 
 PowerShell (Windows):
 
@@ -43,82 +63,112 @@ cd your-target-repo
 ..\docs-platform\scripts\init-docs.ps1
 ```
 
-You can override the platform repo URL and branch via parameters:
+Optional overrides:
 
 ```powershell
-..\docs-platform\scripts\init-docs.ps1 -PlatformRepo 'https://dev.azure.com/yourorg/docs-platform' -Ref 'v2'
+..\docs-platform\scripts\init-docs.ps1 -PlatformRepo 'https://dev.azure.com/yourorg/docs-platform' -Ref 'main'
 ```
 
-Or via environment variables (`$env:DOCS_PLATFORM_REPO`, `$env:DOCS_PLATFORM_REF`).
+Environment variables `DOCS_PLATFORM_REPO` and `DOCS_PLATFORM_REF` are also
+supported.
 
-### Existing repository (sync templates)
+### Existing repository
 
-To pull updated templates and conventions without touching your actual docs:
+Use `scripts/sync-docs.sh` to pull platform-owned template updates into an
+existing repo without touching project-specific documentation content.
 
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/yourorg/docs-platform/main/scripts/sync-docs.sh)
-```
+The sync surface is intentionally narrow:
 
-Or via the Azure DevOps pipeline — see `.azure/pipelines/sync-docs.yml` in your repo.
+- `docs/STYLE.md`
+- `docs/templates/*`
+- `.markdownlint.json`
+- `docs/.platform-version`
 
 ---
 
-## Repository structure
+## Repository layout
+
+`scaffold/` is the canonical payload for consuming repos.
+When structure or template rules change, update `scaffold/` first.
 
 ```text
 docs-platform/
-├── scaffold/          # files copied into target repos
+├── scaffold/                 # source of truth copied into consuming repos
 │   ├── AGENTS.md
 │   ├── CONTRIBUTING.md
 │   ├── CHANGELOG.md
-│   ├── .markdownlint.json
-│   └── docs/
-│       ├── README.md
-│       ├── STYLE.md
-│       ├── glossary.md
-│       ├── architecture/
-│       ├── design/
-│       ├── specs/
-│       ├── adr/
-│       ├── rfc/
-│       ├── api/
-│       ├── testing/
-│       ├── security/
-│       └── templates/
+│   ├── README.md             # becomes docs/README.md in consuming repos
+│   ├── STYLE.md
+│   ├── glossary.md
+│   ├── adr/
+│   ├── architecture/
+│   ├── design/
+│   ├── rfc/
+│   ├── security/
+│   ├── specs/
+│   ├── templates/
+│   └── testing/
 ├── scripts/
-│   ├── init-docs.sh    # first-time scaffold (bash)
-│   ├── init-docs.ps1   # first-time scaffold (PowerShell)
-│   └── sync-docs.sh    # update templates in existing repos
+│   ├── init-docs.ps1
+│   ├── init-docs.sh
+│   └── sync-docs.sh
 └── agent/
-    ├── doc-scaffold.prompt.md   # Copilot agent: scaffold a new repo
-    └── doc-sync.prompt.md       # Copilot agent: sync templates
+        ├── doc-scaffold.prompt.md
+        ├── doc-sync.prompt.md
+        ├── rfc-generate.prompt.md
+        ├── rfc-resolve.prompt.md
+        ├── spec-generate.prompt.md
+        ├── spec-plan.prompt.md
+        └── spec-tasks.prompt.md
 ```
 
 ---
 
-## What gets synced vs what is yours
+## Prompt set
 
-| Path | Owned by | Updated by sync |
-| ---- | -------- | --------------- |
-| `docs/templates/` | docs-platform | ✅ Yes |
-| `docs/STYLE.md` | docs-platform | ✅ Yes |
-| `.markdownlint.json` | docs-platform | ✅ Yes |
-| `docs/glossary.md` | Your repo | ❌ Never |
-| `docs/adr/` | Your repo | ❌ Never |
-| `docs/rfc/` | Your repo | ❌ Never |
-| `docs/design/` | Your repo | ❌ Never |
-| `docs/architecture/` | Your repo | ❌ Never |
-| `docs/specs/` | Your repo | ❌ Never |
-| `AGENTS.md` | Your repo | ❌ Never |
-| `CONTRIBUTING.md` | Your repo | ❌ Never |
+The `agent/` folder now covers the full document workflow:
+
+| Prompt | Purpose |
+| ------ | ------- |
+| `doc-scaffold` | Scaffold documentation into a new repo |
+| `doc-sync` | Sync platform-owned templates and conventions |
+| `rfc-generate` | Create an RFC for an open question or cross-cutting decision |
+| `rfc-resolve` | Turn a resolved RFC into an ADR and close the RFC |
+| `spec-generate` | Create a FUNC or TECH spec from a high-level requirement |
+| `spec-plan` | Generate architecture and design docs from an approved spec |
+| `spec-tasks` | Break an approved spec into ordered, testable tasks |
 
 ---
 
-## Contributing to this repo
+## What sync updates and what it leaves alone
 
-Changes to `scaffold/templates/` or `docs/STYLE.md` will propagate to all
-repos on their next sync. Make changes carefully and document them in
-`CHANGELOG.md`.
+| Path | Updated by sync |
+| ---- | --------------- |
+| `docs/templates/` | Yes |
+| `docs/STYLE.md` | Yes |
+| `.markdownlint.json` | Yes |
+| `docs/.platform-version` | Yes |
+| `docs/glossary.md` | No |
+| `docs/adr/` | No |
+| `docs/rfc/` | No |
+| `docs/design/` | No |
+| `docs/architecture/` | No |
+| `docs/specs/` | No |
+| `AGENTS.md` | No |
+| `CONTRIBUTING.md` | No |
+| `CHANGELOG.md` | No |
 
-For structural changes (adding a new folder to scaffold), open an RFC in
-`docs/rfc/` before implementing.
+---
+
+## Contributing
+
+Changes to structure, templates, or shared conventions should be made inside
+`scaffold/` and recorded in [CHANGELOG.md](CHANGELOG.md) when they affect
+consuming repos.
+
+If you change the documentation model in a way that affects consuming projects:
+
+- Add an unreleased changelog entry with migration guidance
+- Keep `agent/` prompts aligned with the scaffold and scripts
+- Treat breaking changes explicitly, especially spec numbering, lifecycle, and
+    folder ownership rules

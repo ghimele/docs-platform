@@ -6,7 +6,7 @@
 This folder contains Architectural Decision Records (ADRs).
 
 ADRs are **immutable**. Once accepted, they are never edited or deleted.
-If a decision is superseded, create a new ADR and mark the old one as `Superseded by ADR-NNN`.
+If a decision is superseded, create a new ADR and mark the old one as `Superseded by ADR-NN`.
 
 For decisions still under discussion, see `../rfc/`.
 
@@ -16,7 +16,7 @@ For decisions still under discussion, see `../rfc/`.
 
 1. Check `../rfc/` for an existing RFC on the same topic
 2. Assign the next sequential ID by scanning this folder
-3. Copy `../templates/adr.md` and rename it `NNN-short-title.md`
+3. Copy `../templates/adr.md` and rename it `ADR-NN-short-title.md`
 4. Fill in all sections
 5. Add an entry to the index table below
 6. Submit for review

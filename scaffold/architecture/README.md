@@ -30,3 +30,17 @@ Add an architecture document when describing:
 - Persistence, concurrency, or consistency strategies at system level
 
 Do **not** add implementation details or component internals here — those belong in `../design/`.
+
+---
+
+## How Architecture Flows to Other Documents
+
+Architecture documents sit at the top of the documentation chain:
+
+```
+Architecture (system constraints) → TECH spec (component contract) → Design (internals)
+```
+
+- System-wide invariants defined here **constrain** what TECH specs can promise.
+- TECH specs should reference the architecture constraints they satisfy.
+- If a proposed TECH spec would violate an architectural invariant, that requires an ADR first.

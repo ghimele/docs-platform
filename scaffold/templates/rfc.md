@@ -1,9 +1,9 @@
-# RFC-NNN: Title
+# RFC-NN: Title
 
 **Status:** Open  
 **Last updated:** YYYY-MM-DD  
 **Author:** <!-- name -->  
-**Related ADRs:** <!-- ADR-NNN or remove line -->  
+**Related ADRs:** <!-- ADR-NN or remove line -->  
 **Discussion deadline:** <!-- YYYY-MM-DD or "open-ended" -->  
 
 ---

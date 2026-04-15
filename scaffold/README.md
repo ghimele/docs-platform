@@ -16,7 +16,6 @@ Agents: read `AGENTS.md` at the repository root before performing any task.
 | [specs/](specs/README.md) | Functional and technical specifications |
 | [adr/](adr/README.md) | Architectural Decision Records (immutable history) |
 | [rfc/](rfc/README.md) | Open proposals under discussion |
-| [api/](api/README.md) | Public interface contracts |
 | [testing/](testing/README.md) | Test strategy and conventions |
 | [security/](security/README.md) | Threat model and coding standards |
 | [templates/](templates/README.md) | Document templates |

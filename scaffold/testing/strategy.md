@@ -105,7 +105,53 @@ public class OrderServiceTests
 
 ---
 
-## 8. References
+## 8. Spec-Driven Testing
+
+Tests must trace back to spec acceptance criteria. This section defines how.
+
+### Deriving tests from specs
+
+Every acceptance criterion (`AC-NN`) in a spec should produce at least one test.
+Use the AC ID in the test name so traceability is automatic.
+
+**C++ naming pattern:**
+
+```cpp
+// TECH-001, AC-01: Valid credentials return a token
+TEST_F(AuthServiceTest, AC01_Login_ValidCredentials_ReturnsToken) { ... }
+
+// TECH-001, AC-02: Expired token is rejected
+TEST_F(AuthServiceTest, AC02_Validate_ExpiredToken_ReturnsUnauthorised) { ... }
+```
+
+**\.NET naming pattern:**
+
+```csharp
+// TECH-001, AC-01: Valid credentials return a token
+[Fact]
+public void AC01_Login_ValidCredentials_ReturnsToken() { ... }
+
+// TECH-001, AC-02: Expired token is rejected
+[Fact]
+public void AC02_Validate_ExpiredToken_ReturnsUnauthorised() { ... }
+```
+
+### Linking tests back to the spec
+
+After writing a test, update the spec:
+
+1. Fill the **Test** column in the Acceptance Criteria table (section 6).
+2. Set the AC row in Implementation Status (section 8) to `Done` with the PR reference.
+
+### When a spec has no testable criteria
+
+Some acceptance criteria are non-functional or require manual verification
+(e.g. "documentation is published"). Mark the Test column as `N/A` and record
+verification evidence in the Implementation Status section instead.
+
+---
+
+## 9. References
 
 - `../architecture/` — system structure relevant for integration test boundaries
-- `../api/` — interface contracts that tests must validate
+- `../specs/` — acceptance criteria that drive test creation

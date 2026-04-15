@@ -3,14 +3,16 @@
 **Status:** Draft  
 **Last updated:** YYYY-MM-DD  
 **Owner:** <!-- name or team -->  
-**Related ADRs:** <!-- ADR-NNN, ADR-NNN or remove line -->  
+**Related ADRs:** <!-- ADR-NN, ADR-NN or remove line -->  
 
 ---
 
 ## 1. Purpose
 
 <!-- One paragraph. What component or subsystem does this document cover?
-     What decisions does it explain? -->
+     What internal decisions does it explain?
+     For the public contract (APIs, schemas, error codes), see the corresponding
+     technical spec in docs/specs/technical/. -->
 
 ---
 
@@ -39,8 +41,10 @@
 ## 4. Detailed Description
 
 <!-- Main content. Use subsections (4.1, 4.2, ...) as needed.
-     Cover: structure, key classes/types, data flow within the component,
-     and rationale for non-obvious choices. -->
+     Cover: internal structure, key classes/types, data flow within the component,
+     algorithms, and rationale for non-obvious choices.
+     Do NOT duplicate the public contract defined in the corresponding TECH spec;
+     reference it instead. -->
 
 ### 4.1 <!-- Subsection title -->
 

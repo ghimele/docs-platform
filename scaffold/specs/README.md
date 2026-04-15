@@ -14,14 +14,20 @@ This folder contains functional and technical specifications.
 Functional specs describe **what the system does** from a stakeholder perspective.
 They are written for product owners, architects, and QA.
 
-Naming: `FUNC-NNN-short-title.md`
+Naming: `FUNC-NN-short-title.md`
 
 ### `technical/`
 
-Technical specs describe **how the system does it** — contracts, interfaces, protocols.
-They are written for developers and agents generating code or tests.
+Technical specs define **public-facing contracts** — APIs, message schemas, wire formats,
+error codes, and integration protocols. They describe everything that crosses a component
+boundary and is callable or observable from outside the component.
 
-Naming: `TECH-NNN-short-title.md`
+Technical specs are written for developers and agents generating code or tests.
+
+> **Boundary rule:** If it crosses a component boundary, it belongs in a TECH spec.
+> If it is internal to a component, it belongs in a [design document](../design/).
+
+Naming: `TECH-NN-short-title.md`
 
 ---
 

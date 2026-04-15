@@ -3,7 +3,7 @@
 **Status:** Draft  
 **Last updated:** YYYY-MM-DD  
 **Owner:** <!-- name or team -->  
-**Related ADRs:** <!-- ADR-NNN, ADR-NNN or remove line -->  
+**Related ADRs:** <!-- ADR-NN, ADR-NN or remove line -->  
 
 ---
 

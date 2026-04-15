@@ -14,7 +14,7 @@ by marking its status as `Accepted` or `Rejected`.
 ## How to Create an RFC
 
 1. Assign the next sequential ID by scanning this folder
-2. Copy `../templates/rfc.md` and rename it `RFC-NNN-short-title.md`
+2. Copy `../templates/rfc.md` and rename it `RFC-NN-short-title.md`
 3. Fill in all sections
 4. Add an entry to the index table below
 5. Share for discussion
