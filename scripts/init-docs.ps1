@@ -154,6 +154,23 @@ try {
     }
     Write-Host '  created  docs/' -ForegroundColor Green
 
+    # ── Copy agent prompt files ──────────────────────────────────────────────
+    $agentSource = Join-Path $platformSource 'agent'
+    if (Test-Path $agentSource -PathType Container) {
+        Write-Host 'Copying agent prompts...'
+        New-Item -Path './agent' -ItemType Directory -Force | Out-Null
+        Get-ChildItem -Path $agentSource -Filter '*.prompt.md' | ForEach-Object {
+            $targetPath = Join-Path './agent' $_.Name
+            if (-not (Test-Path $targetPath)) {
+                Copy-Item -Path $_.FullName -Destination $targetPath
+                Write-Host "  created  agent/$($_.Name)" -ForegroundColor Green
+            }
+            else {
+                Write-Host "  skipped  agent/$($_.Name) (already exists)" -ForegroundColor Yellow
+            }
+        }
+    }
+
     # ── Store platform version reference ─────────────────────────────────────
     if (Test-GitRepo $platformSource) {
         $platformRepoValue = (git -C $platformSource config --get remote.origin.url).Trim()
@@ -201,4 +218,4 @@ Write-Host 'Next steps:'
 Write-Host '  1. Edit AGENTS.md — add your project-specific code conventions'
 Write-Host '  2. Edit docs/glossary.md — add your domain terms'
 Write-Host "  3. Commit everything: git add -A ; git commit -m 'chore: init docs structure from docs-platform'"
-Write-Host '  4. To sync template updates later: .\scripts\sync-docs.ps1'
+Write-Host '  4. To sync template and prompt updates later: .\scripts\sync-docs.ps1'

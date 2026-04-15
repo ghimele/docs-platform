@@ -24,6 +24,7 @@ Agents: read `AGENTS.md` at the repository root before performing any task.
 
 - [glossary.md](glossary.md) — authoritative definitions of all domain terms
 - [STYLE.md](STYLE.md) — document formatting and header conventions
+- [copilot-chat.md](copilot-chat.md) — how to use the platform prompts in VS Code Copilot Chat
 
 ---
 

@@ -5,8 +5,9 @@ the current repository without touching any project-specific documentation.
 
 ## Description
 
-Use this agent when you want to pull updated templates or style rules from
-docs-platform into an existing repo. Safe to run at any time.
+Use this agent when you want to pull updated templates, style rules, or
+platform-owned prompt files from docs-platform into an existing repo. Safe to
+run at any time.
 
 ## Steps
 
@@ -26,12 +27,13 @@ docs-platform into an existing repo. Safe to run at any time.
 3. **Show diff summary**
 
   ```bash
-  git diff docs/templates/ docs/STYLE.md .markdownlint.json
+  git diff docs/copilot-chat.md docs/templates/ docs/STYLE.md .markdownlint.json agent/
   ```
 
   Summarise what changed in plain language. For example:
   > "The ADR template gained a new 'Constraints & Invariants' section.
-  > The spec template now separates functional and technical requirements."
+  > The spec template now separates functional and technical requirements.
+  > The prompt files under `agent/` were updated to match the current workflow."
 
 4. **Check for breaking changes**
    Scan existing docs in `docs/adr/`, `docs/design/`, `docs/architecture/`
@@ -41,7 +43,7 @@ docs-platform into an existing repo. Safe to run at any time.
 5. **Suggest commit**
 
   ```bash
-  git add docs/templates/ docs/STYLE.md .markdownlint.json docs/.platform-version
+  git add docs/copilot-chat.md docs/templates/ docs/STYLE.md .markdownlint.json agent/ docs/.platform-version
   git commit -m "chore: sync doc templates from docs-platform"
   ```
 
@@ -52,6 +54,8 @@ docs-platform into an existing repo. Safe to run at any time.
 - Modifies `AGENTS.md` or `CONTRIBUTING.md`
 - Creates, renames, or deletes any project-specific documentation
 
+Platform-owned prompt files under `agent/` are allowed to change during sync.
+
 ## Notes
 
 - If `scripts/sync-docs.sh` is missing, fetch it first:
@@ -61,4 +65,5 @@ docs-platform into an existing repo. Safe to run at any time.
     -o scripts/sync-docs.sh && chmod +x scripts/sync-docs.sh
   ```
 
-- The sync is safe to run in CI — it only changes platform-owned files
+- The sync is safe to run in CI — it only changes platform-owned files,
+  including prompt files under `agent/`

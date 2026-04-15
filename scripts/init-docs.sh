@@ -117,6 +117,25 @@ else
 fi
 echo -e "  ${GREEN}created${NC}  docs/"
 
+# ── Copy agent prompt files ───────────────────────────────────────────────────
+if [ -d "$PLATFORM_SOURCE/agent" ]; then
+  echo "Copying agent prompts..."
+  mkdir -p ./agent
+  for path in "$PLATFORM_SOURCE"/agent/*.prompt.md; do
+    if [ ! -e "$path" ]; then
+      continue
+    fi
+
+    name=$(basename "$path")
+    if [ ! -e "./agent/$name" ]; then
+      cp "$path" "./agent/$name"
+      echo -e "  ${GREEN}created${NC}  agent/$name"
+    else
+      echo -e "  ${YELLOW}skipped${NC}  agent/$name (already exists)"
+    fi
+  done
+fi
+
 # ── Store platform version reference ─────────────────────────────────────────
 if command -v git > /dev/null 2>&1 && is_git_repo "$PLATFORM_SOURCE"; then
   PLATFORM_REPO_VALUE="$(git -C "$PLATFORM_SOURCE" config --get remote.origin.url || true)"
@@ -150,4 +169,4 @@ echo "Next steps:"
 echo "  1. Edit AGENTS.md — add your project-specific code conventions"
 echo "  2. Edit docs/glossary.md — add your domain terms"
 echo "  3. Commit everything: git add -A && git commit -m 'chore: init docs structure from docs-platform'"
-echo "  4. To sync template updates later: bash scripts/sync-docs.sh"
+echo "  4. To sync template and prompt updates later: bash scripts/sync-docs.sh"

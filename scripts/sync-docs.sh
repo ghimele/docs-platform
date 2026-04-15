@@ -2,7 +2,7 @@
 # sync-docs.sh — update shared templates and conventions from docs-platform
 # Safe to run on any existing repo: never touches your actual docs content.
 #
-# Files updated:   docs/templates/*, docs/STYLE.md, .markdownlint.json
+# Files updated:   docs/templates/*, docs/STYLE.md, .markdownlint.json, agent/*.prompt.md
 # Files never touched: docs/adr/*, docs/rfc/*, docs/design/*, docs/architecture/*,
 #                      docs/specs/*, docs/glossary.md, AGENTS.md, CONTRIBUTING.md
 #
@@ -16,6 +16,38 @@ PLATFORM_REPO="${DOCS_PLATFORM_REPO:-https://github.com/yourorg/docs-platform}"
 REF="${DOCS_PLATFORM_REF:-main}"
 TMP=$(mktemp -d)
 trap "rm -rf '$TMP'" EXIT
+
+resolve_source_path() {
+  local target_path="$1"
+
+  case "$target_path" in
+    docs/*)
+      local relative_path="${target_path#docs/}"
+      if [ -f "$TMP/scaffold/$relative_path" ]; then
+        printf '%s\n' "$TMP/scaffold/$relative_path"
+        return 0
+      fi
+      if [ -f "$TMP/scaffold/docs/$relative_path" ]; then
+        printf '%s\n' "$TMP/scaffold/docs/$relative_path"
+        return 0
+      fi
+      ;;
+    agent/*)
+      if [ -f "$TMP/$target_path" ]; then
+        printf '%s\n' "$TMP/$target_path"
+        return 0
+      fi
+      ;;
+    *)
+      if [ -f "$TMP/scaffold/$target_path" ]; then
+        printf '%s\n' "$TMP/scaffold/$target_path"
+        return 0
+      fi
+      ;;
+  esac
+
+  return 1
+}
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
@@ -55,6 +87,7 @@ git clone --quiet --depth 1 --branch "$REF" "$PLATFORM_REPO" "$TMP"
 echo "Updating shared convention files..."
 
 SYNC_FILES=(
+  "docs/copilot-chat.md"
   "docs/STYLE.md"
   "docs/templates/README.md"
   "docs/templates/adr.md"
@@ -63,13 +96,19 @@ SYNC_FILES=(
   "docs/templates/design.md"
   "docs/templates/spec.md"
   ".markdownlint.json"
+  "agent/doc-scaffold.prompt.md"
+  "agent/doc-sync.prompt.md"
+  "agent/rfc-generate.prompt.md"
+  "agent/rfc-resolve.prompt.md"
+  "agent/spec-generate.prompt.md"
+  "agent/spec-plan.prompt.md"
+  "agent/spec-tasks.prompt.md"
 )
 
 CHANGED=0
 for f in "${SYNC_FILES[@]}"; do
-  src="$TMP/scaffold/$f"
   dst="./$f"
-  if [ -f "$src" ]; then
+  if src="$(resolve_source_path "$f")"; then
     # Track if file actually changed
     if [ -f "$dst" ] && diff -q "$src" "$dst" > /dev/null 2>&1; then
       echo -e "  ${YELLOW}unchanged${NC} $f"
@@ -100,7 +139,7 @@ if [ "$CHANGED" -gt 0 ]; then
   echo -e "${GREEN}Sync complete — $CHANGED file(s) updated.${NC}"
   echo ""
   echo "Review changes: git diff"
-  echo "Commit:         git add docs/templates/ docs/STYLE.md .markdownlint.json docs/.platform-version"
+  echo "Commit:         git add docs/copilot-chat.md docs/templates/ docs/STYLE.md .markdownlint.json agent/ docs/.platform-version"
   echo "                git commit -m 'chore: sync doc templates from docs-platform@${REF}'"
 else
   echo -e "${GREEN}Sync complete — already up to date.${NC}"

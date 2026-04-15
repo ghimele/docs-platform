@@ -92,9 +92,11 @@ existing repo without touching project-specific documentation content.
 
 The sync surface is intentionally narrow:
 
+- `docs/copilot-chat.md`
 - `docs/STYLE.md`
 - `docs/templates/*`
 - `.markdownlint.json`
+- `agent/*.prompt.md`
 - `docs/.platform-version`
 
 ---
@@ -157,9 +159,11 @@ The `agent/` folder now covers the full document workflow:
 
 | Path | Updated by sync |
 | ---- | --------------- |
+| `docs/copilot-chat.md` | Yes |
 | `docs/templates/` | Yes |
 | `docs/STYLE.md` | Yes |
 | `.markdownlint.json` | Yes |
+| `agent/*.prompt.md` | Yes |
 | `docs/.platform-version` | Yes |
 | `docs/glossary.md` | No |
 | `docs/adr/` | No |
@@ -177,7 +181,8 @@ The `agent/` folder now covers the full document workflow:
 
 Changes to structure, templates, or shared conventions should be made inside
 `scaffold/` and recorded in [CHANGELOG.md](CHANGELOG.md) when they affect
-consuming repos.
+consuming repos. Prompt changes in [agent](agent) should be kept in sync with
+the init and sync scripts.
 
 If you change the documentation model in a way that affects consuming projects:
 

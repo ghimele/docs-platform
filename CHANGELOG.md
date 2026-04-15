@@ -14,6 +14,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `init-docs.sh` and `init-docs.ps1` now support scaffolding into a plain folder without requiring `.git`
 - Init scripts now reuse the local `docs-platform` checkout when run from a manual clone instead of re-cloning the platform repo
 - Init scripts now support explicit local source override via `DOCS_PLATFORM_PATH` / `-PlatformPath`
+- Init scripts now copy platform-owned prompt files from `agent/` into consuming repos
+- `sync-docs.sh` now updates platform-owned prompt files under `agent/` in consuming repos
+- Added `docs/copilot-chat.md` guide explaining how to use the platform prompts in VS Code Copilot Chat, with examples for `S`, `M`, `L`, and `XL` tiers
 - Added brownfield (existing codebase) guidance across scaffold and agent prompts
   - `AGENTS.md`: new "Working in an existing codebase (brownfield)" subsection under Rules for Agents — scan for existing artefacts, read existing code, account for backward compatibility, acknowledge what already works, prefer incremental change
   - `agent/spec-generate.prompt.md`: step 2 now scans for existing specs/code; interview adds "What exists today?" question; Background section includes current-state paragraph; Requirements include migration for contract changes

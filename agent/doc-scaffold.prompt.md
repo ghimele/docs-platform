@@ -23,6 +23,7 @@ required post-scaffold customisation steps.
   ```
 
   Report which files were created and which were skipped.
+   Confirm that the scaffolded `agent/` prompt files were copied.
 
 3. **Prompt for project-specific customisation**
 
@@ -42,7 +43,12 @@ required post-scaffold customisation steps.
    > "Open `AGENTS.md` and add your project-specific code conventions under the
    > C++ and .NET sections. This is the most important step for agent-assisted development."
 
-6. **Suggest initial commit**
+6. **Explain prompt ownership**
+   Tell the user:
+   > "Files under `agent/` are platform-owned prompts. Update them via sync rather
+   > than editing them directly unless you intentionally want to diverge from docs-platform."
+
+7. **Suggest initial commit**
 
    ```bash
    git add -A
