@@ -23,21 +23,37 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# ── Colours ──────────────────────────────────────────────────────────────────
-function Write-Colour {
-    param([string]$Text, [ConsoleColor]$Colour)
-    Write-Host $Text -ForegroundColor $Colour -NoNewline
-}
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 function Test-GitRepo {
     param([string]$Path)
-
     try {
         git -C $Path rev-parse --git-dir 2>$null | Out-Null
         return ($LASTEXITCODE -eq 0)
     }
-    catch {
-        return $false
+    catch { return $false }
+}
+
+function Copy-NewFilesOnly {
+    param(
+        [string]$SourceDir,
+        [string]$DestDir,
+        [string]$Filter = '*',
+        [string]$Label
+    )
+    if (-not (Test-Path $SourceDir -PathType Container)) {
+        Write-Host "  skipped  $Label (not found in platform)" -ForegroundColor Yellow
+        return
+    }
+    New-Item -Path $DestDir -ItemType Directory -Force | Out-Null
+    Get-ChildItem -Path $SourceDir -Filter $Filter | ForEach-Object {
+        $targetPath = Join-Path $DestDir $_.Name
+        if (-not (Test-Path $targetPath)) {
+            Copy-Item -Path $_.FullName -Destination $targetPath -Recurse
+            Write-Host "  created  $Label/$($_.Name)" -ForegroundColor Green
+        }
+        else {
+            Write-Host "  skipped  $Label/$($_.Name) (already exists)" -ForegroundColor Yellow
+        }
     }
 }
 
@@ -63,11 +79,12 @@ if (Test-Path -Path './docs' -PathType Container) {
     exit 1
 }
 
-# ── Clone platform repo ─────────────────────────────────────────────────────
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# ── Determine platform source ─────────────────────────────────────────────────
+$ScriptDir        = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalPlatformRoot = Split-Path -Parent $ScriptDir
-$platformSource = $null
-$TmpDir = $null
+$platformSource   = $null
+$TmpDir           = $null
+
 try {
     if (-not $PlatformPath -and $env:DOCS_PLATFORM_PATH) {
         $PlatformPath = $env:DOCS_PLATFORM_PATH
@@ -85,16 +102,12 @@ try {
         $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) "docs-platform-$([guid]::NewGuid().ToString('N'))"
         Write-Host 'Cloning docs-platform...'
         git clone --quiet --depth 1 --branch $Ref $PlatformRepo $TmpDir
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error 'Failed to clone docs-platform repository.'
-            exit 1
-        }
-
+        if ($LASTEXITCODE -ne 0) { Write-Error 'Failed to clone docs-platform repository.'; exit 1 }
         $platformSource = $TmpDir
     }
     Write-Host ''
 
-    # ── Copy root files (skip if already present) ────────────────────────────
+    # ── Copy root files (skip if already present) ─────────────────────────────
     Write-Host 'Copying root files...'
     $rootFiles = @('AGENTS.md', 'CONTRIBUTING.md', 'CHANGELOG.md', '.markdownlint.json')
     foreach ($f in $rootFiles) {
@@ -114,38 +127,29 @@ try {
         }
     }
 
-    # ── Copy docs/ tree ──────────────────────────────────────────────────────
+    # ── Copy docs/ tree ───────────────────────────────────────────────────────
     Write-Host 'Copying docs/ structure...'
     $scaffoldDocs = Join-Path $platformSource 'scaffold/docs'
     if (Test-Path $scaffoldDocs -PathType Container) {
-        # Copy every item, skipping files that already exist
         New-Item -Path './docs' -ItemType Directory -Force | Out-Null
         Get-ChildItem -Path $scaffoldDocs -Recurse | ForEach-Object {
             $relativePath = $_.FullName.Substring($scaffoldDocs.Length).TrimStart('\', '/')
             $targetPath   = Join-Path './docs' $relativePath
             if ($_.PSIsContainer) {
-                if (-not (Test-Path $targetPath)) {
-                    New-Item -Path $targetPath -ItemType Directory -Force | Out-Null
-                }
+                if (-not (Test-Path $targetPath)) { New-Item -Path $targetPath -ItemType Directory -Force | Out-Null }
             }
             else {
-                if (-not (Test-Path $targetPath)) {
-                    Copy-Item -Path $_.FullName -Destination $targetPath
-                }
+                if (-not (Test-Path $targetPath)) { Copy-Item -Path $_.FullName -Destination $targetPath }
             }
         }
     }
     else {
-        # Fallback: scaffold root IS the docs content (minus root files)
         New-Item -Path './docs' -ItemType Directory -Force | Out-Null
         $excludeFiles = $rootFiles + @('README.md')
         Get-ChildItem -Path (Join-Path $platformSource 'scaffold') -Exclude $excludeFiles | ForEach-Object {
             $targetPath = Join-Path './docs' $_.Name
-            if (-not (Test-Path $targetPath)) {
-                Copy-Item -Path $_.FullName -Destination $targetPath -Recurse
-            }
+            if (-not (Test-Path $targetPath)) { Copy-Item -Path $_.FullName -Destination $targetPath -Recurse }
         }
-        # Copy scaffold README.md into docs/ as the index
         $scaffoldReadme = Join-Path $platformSource 'scaffold/README.md'
         $docsReadme     = Join-Path './docs' 'README.md'
         if ((Test-Path $scaffoldReadme) -and -not (Test-Path $docsReadme)) {
@@ -154,44 +158,57 @@ try {
     }
     Write-Host '  created  docs/' -ForegroundColor Green
 
-    # ── Copy agent prompt files ──────────────────────────────────────────────
-    $agentSource = Join-Path $platformSource 'agent'
-    if (Test-Path $agentSource -PathType Container) {
-        Write-Host 'Copying agent prompts...'
-        New-Item -Path './agent' -ItemType Directory -Force | Out-Null
-        Get-ChildItem -Path $agentSource -Filter '*.prompt.md' | ForEach-Object {
-            $targetPath = Join-Path './agent' $_.Name
+    # ── Copy .github/ files ───────────────────────────────────────────────────
+    Write-Host 'Copying .github/ files...'
+    $githubSource = Join-Path $platformSource 'scaffold/.github'
+    if (Test-Path $githubSource -PathType Container) {
+        New-Item -Path './.github' -ItemType Directory -Force | Out-Null
+        Get-ChildItem -Path $githubSource | ForEach-Object {
+            $targetPath = Join-Path './.github' $_.Name
             if (-not (Test-Path $targetPath)) {
-                Copy-Item -Path $_.FullName -Destination $targetPath
-                Write-Host "  created  agent/$($_.Name)" -ForegroundColor Green
+                Copy-Item -Path $_.FullName -Destination $targetPath -Recurse
+                Write-Host "  created  .github/$($_.Name)" -ForegroundColor Green
             }
             else {
-                Write-Host "  skipped  agent/$($_.Name) (already exists)" -ForegroundColor Yellow
+                Write-Host "  skipped  .github/$($_.Name) (already exists)" -ForegroundColor Yellow
             }
         }
     }
+    else {
+        Write-Host '  skipped  .github/ (not found in platform)' -ForegroundColor Yellow
+    }
 
-    # ── Store platform version reference ─────────────────────────────────────
+    # ── Copy agent prompt files ───────────────────────────────────────────────
+    Write-Host 'Copying agent prompts...'
+    Copy-NewFilesOnly `
+        -SourceDir (Join-Path $platformSource 'agent') `
+        -DestDir   './agent' `
+        -Filter    '*.prompt.md' `
+        -Label     'agent'
+
+    # ── Copy instructions/ files ──────────────────────────────────────────────
+    Write-Host 'Copying instructions/...'
+    Copy-NewFilesOnly `
+        -SourceDir (Join-Path $platformSource 'instructions') `
+        -DestDir   './instructions' `
+        -Filter    '*.instructions.md' `
+        -Label     'instructions'
+
+    # ── Store platform version reference ──────────────────────────────────────
     if (Test-GitRepo $platformSource) {
         $platformRepoValue = (git -C $platformSource config --get remote.origin.url).Trim()
-        if (-not $platformRepoValue) {
-            $platformRepoValue = $platformSource
-        }
-
-        $platformRefValue = (git -C $platformSource branch --show-current).Trim()
-        if (-not $platformRefValue) {
-            $platformRefValue = $Ref
-        }
-
-        $commit  = (git -C $platformSource rev-parse HEAD).Trim()
+        if (-not $platformRepoValue) { $platformRepoValue = $platformSource }
+        $platformRefValue  = (git -C $platformSource branch --show-current).Trim()
+        if (-not $platformRefValue) { $platformRefValue = $Ref }
+        $commit = (git -C $platformSource rev-parse HEAD).Trim()
     }
     else {
         $platformRepoValue = if ($PlatformPath) { $PlatformPath } else { $PlatformRepo }
-        $platformRefValue = $Ref
-        $commit = 'unknown'
+        $platformRefValue  = $Ref
+        $commit            = 'unknown'
     }
 
-    $synced  = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+    $synced = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
     $versionContent = @"
 # This file is managed by docs-platform. Do not edit manually.
 repo=$platformRepoValue
@@ -204,18 +221,19 @@ synced=$synced
     Write-Host '  created  docs/.platform-version' -ForegroundColor Green
 }
 finally {
-    # ── Cleanup temp dir ─────────────────────────────────────────────────────
     if ($TmpDir -and (Test-Path $TmpDir)) {
         Remove-Item -Path $TmpDir -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
 
-# ── Done ─────────────────────────────────────────────────────────────────────
+# ── Done ──────────────────────────────────────────────────────────────────────
 Write-Host ''
 Write-Host 'Scaffold complete.' -ForegroundColor Green
 Write-Host ''
 Write-Host 'Next steps:'
 Write-Host '  1. Edit AGENTS.md — add your project-specific code conventions'
 Write-Host '  2. Edit docs/glossary.md — add your domain terms'
-Write-Host "  3. Commit everything: git add -A ; git commit -m 'chore: init docs structure from docs-platform'"
-Write-Host '  4. To sync template and prompt updates later: .\scripts\sync-docs.ps1'
+Write-Host '  3. Review .github/copilot-instructions.md — already wired for Copilot'
+Write-Host '  4. Review instructions/*.instructions.md — coding conventions loaded by the code agent'
+Write-Host "  5. Commit everything: git add -A ; git commit -m 'chore: init docs structure from docs-platform'"
+Write-Host '  6. To sync template and prompt updates later: .\scripts\sync-docs.ps1'

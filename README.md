@@ -8,44 +8,77 @@ This repository is the source of truth for:
 - Documentation structure copied into consuming repos
 - Templates for ADRs, RFCs, architecture, design, and specs
 - Formatting and lifecycle conventions
-- Agent prompts that support the RFC -> ADR -> spec -> plan -> tasks workflow
+- Agent prompts that support the RFC → ADR → spec → plan → tasks → code workflow
 
 ---
 
-## Latest changes
+## Latest Changes
 
 Recent platform updates include:
 
-- Brownfield guidance: agents should scan existing docs and code first, prefer
-    updating existing artefacts, and account for backward compatibility
-- Workflow sizing tiers: `S`, `M`, `L`, `XL` now determine how much process a
-    change needs
-- Expanded prompt set: RFC generation/resolution plus spec generation, planning,
-    and task decomposition
-- Spec lifecycle and traceability: review state, approval fields, acceptance
-    criteria tables, tasks, and implementation tracking
-- Clear boundary between technical specs and design docs: technical specs define
-    public contracts, design docs cover internals
-- Removal of `docs/api/`: public contracts now live in `docs/specs/technical/`
+- **Simplified agent set:** seven agents collapsed into two — `spec` and `code`.
+  `spec` handles the full RFC → ADR → spec → plan → tasks workflow in a single
+  conversation, skipping phases not needed for the tier. `code` handles
+  task-by-task implementation with full traceability back to the spec.
+- **GitHub Copilot (VS Code) support:** prompt files now include Copilot-native
+  frontmatter (`mode: agent`, `tools`, `applyTo`) so they run directly via
+  `Chat: Run Prompt File` without copy-pasting.
+- **`.github/copilot-instructions.md`:** auto-loaded by Copilot every session —
+  replaces manual context-setting with workspace-wide rules, agent index, and
+  security rules.
+- **`instructions/` folder:** language-specific coding conventions loaded by the
+  `code` agent at runtime. `csharp-dotnet.instructions.md` auto-applies to all
+  `.cs` files via `applyTo` frontmatter.
+- **`code` agent runs tests and stages commits:** after writing code the agent
+  runs the relevant tests (`dotnet test --filter` / `ctest -R`) and prepares a
+  traced commit message before asking for confirmation.
+- Brownfield guidance, workflow sizing tiers, spec lifecycle, and AC-ID
+  traceability conventions carried forward unchanged.
 
 See [CHANGELOG.md](CHANGELOG.md) for full details and migration notes.
 
 ---
 
-## Workflow at a glance
+## Workflow at a Glance
 
 Not every change needs the same ceremony.
 
 | Tier | When to use | Flow |
 | ---- | ----------- | ---- |
-| `S` | Patch, typo, config tweak, no behavioural change | PR only |
-| `M` | Focused feature, single component, small scope | Spec -> code |
-| `L` | Multi-AC or cross-component change | Spec -> tasks -> code |
-| `XL` | Open question, new system, cross-cutting decision | RFC -> ADR -> spec -> plan -> tasks -> code |
+| `S` | Patch, typo, config tweak, no behavioural change | PR only — no agent needed |
+| `M` | Focused feature, single component, ≤ 3 ACs | `spec` → code |
+| `L` | Multi-AC or cross-component change | `spec` → tasks → `code` |
+| `XL` | Open question, new system, cross-cutting decision | `spec` (RFC → ADR → spec → plan → tasks) → `code` |
 
 ---
 
-## How to use this repo
+## Agents
+
+| Agent | File | Purpose |
+| ----- | ---- | ------- |
+| `spec` | `agent/spec.prompt.md` | Everything from RFC to task breakdown |
+| `code` | `agent/code.prompt.md` | Task-by-task implementation with traceability |
+
+### How to invoke in VS Code
+
+```text
+Ctrl+Shift+P → Chat: Run Prompt File → select agent/spec.prompt.md
+```
+
+Or in Copilot Chat:
+
+```text
+Run #file:agent/spec.prompt.md
+```
+
+### Handoff
+
+`spec` produces the approved task list → `code` implements one task at a time.
+Pass the spec ID and task ID when starting `code`: `TECH-01, T-02`.
+
+---
+
+## How to Use This Repo
 
 ### New repository
 
@@ -53,9 +86,7 @@ On GitHub, use `docs-platform` as a template repository to start with a clean
 documentation scaffold.
 
 For manual setup, clone `docs-platform` next to the target folder and run the
-init script from that folder. The init scripts now reuse the local
-`docs-platform` checkout directly, so they do not re-clone the platform repo.
-The target folder does not need to be a git repository.
+init script from that folder:
 
 Bash (macOS / Linux / WSL):
 
@@ -73,46 +104,25 @@ cd your-target-folder
 ..\docs-platform\scripts\init-docs.ps1
 ```
 
-Optional overrides:
-
-`PlatformRepo` and `Ref` are used when the script must fetch a remote platform
-copy. For local usage, the script prefers the checkout it is running from.
-
-```powershell
-..\docs-platform\scripts\init-docs.ps1 -PlatformRepo 'https://dev.azure.com/yourorg/docs-platform' -Ref 'main'
-```
-
-Environment variables `DOCS_PLATFORM_REPO`, `DOCS_PLATFORM_REF`, and
-`DOCS_PLATFORM_PATH` are also supported.
-
 ### Existing repository
 
-Use `scripts/sync-docs.sh` to pull platform-owned template updates into an
-existing repo without touching project-specific documentation content.
-
-The sync surface is intentionally narrow:
-
-- `docs/copilot-chat.md`
-- `docs/STYLE.md`
-- `docs/templates/*`
-- `.markdownlint.json`
-- `agent/*.prompt.md`
-- `docs/.platform-version`
+Use `scripts/sync-docs.sh` to pull platform-owned template and prompt updates
+into an existing repo without touching project-specific documentation.
 
 ---
 
-## Repository layout
+## Repository Layout
 
-`scaffold/` is the canonical payload for consuming repos.
-When structure or template rules change, update `scaffold/` first.
+`scaffold/` is the canonical payload copied into consuming repos.
 
 ```text
 docs-platform/
-├── scaffold/                 # source of truth copied into consuming repos
+├── scaffold/
+│   ├── .github/
+│   │   └── copilot-instructions.md   # auto-loaded by Copilot every session
 │   ├── AGENTS.md
 │   ├── CONTRIBUTING.md
 │   ├── CHANGELOG.md
-│   ├── README.md             # becomes docs/README.md in consuming repos
 │   ├── STYLE.md
 │   ├── glossary.md
 │   ├── adr/
@@ -123,47 +133,32 @@ docs-platform/
 │   ├── specs/
 │   ├── templates/
 │   └── testing/
+├── instructions/
+│   └── csharp-dotnet.instructions.md # auto-applied to *.cs by Copilot
 ├── scripts/
 │   ├── init-docs.ps1
 │   ├── init-docs.sh
 │   └── sync-docs.sh
 └── agent/
-        ├── doc-scaffold.prompt.md
-        ├── doc-sync.prompt.md
-        ├── rfc-generate.prompt.md
-        ├── rfc-resolve.prompt.md
-        ├── spec-generate.prompt.md
-        ├── spec-plan.prompt.md
-        └── spec-tasks.prompt.md
+    ├── spec.prompt.md                # RFC → ADR → spec → plan → tasks
+    └── code.prompt.md                # task implementation + traceability
 ```
 
 ---
 
-## Prompt set
+## Sync Surface
 
-The `agent/` folder now covers the full document workflow:
-
-| Prompt | Purpose |
-| ------ | ------- |
-| `doc-scaffold` | Scaffold documentation into a new repo |
-| `doc-sync` | Sync platform-owned templates and conventions |
-| `rfc-generate` | Create an RFC for an open question or cross-cutting decision |
-| `rfc-resolve` | Turn a resolved RFC into an ADR and close the RFC |
-| `spec-generate` | Create a FUNC or TECH spec from a high-level requirement |
-| `spec-plan` | Generate architecture and design docs from an approved spec |
-| `spec-tasks` | Break an approved spec into ordered, testable tasks |
-
----
-
-## What sync updates and what it leaves alone
+What `sync-docs.sh` updates and what it leaves alone:
 
 | Path | Updated by sync |
 | ---- | --------------- |
-| `docs/copilot-chat.md` | Yes |
 | `docs/templates/` | Yes |
 | `docs/STYLE.md` | Yes |
+| `docs/copilot-chat.md` | Yes |
 | `.markdownlint.json` | Yes |
+| `.github/copilot-instructions.md` | Yes |
 | `agent/*.prompt.md` | Yes |
+| `instructions/*.instructions.md` | Yes |
 | `docs/.platform-version` | Yes |
 | `docs/glossary.md` | No |
 | `docs/adr/` | No |
@@ -181,12 +176,12 @@ The `agent/` folder now covers the full document workflow:
 
 Changes to structure, templates, or shared conventions should be made inside
 `scaffold/` and recorded in [CHANGELOG.md](CHANGELOG.md) when they affect
-consuming repos. Prompt changes in [agent](agent) should be kept in sync with
-the init and sync scripts.
+consuming repos.
 
 If you change the documentation model in a way that affects consuming projects:
 
 - Add an unreleased changelog entry with migration guidance
 - Keep `agent/` prompts aligned with the scaffold and scripts
-- Treat breaking changes explicitly, especially spec numbering, lifecycle, and
-    folder ownership rules
+- Keep `.github/copilot-instructions.md` aligned with `AGENTS.md`
+- Keep `instructions/*.instructions.md` aligned with `docs/security/coding-standards.md`
+- Treat breaking changes explicitly — especially spec numbering, lifecycle, and folder ownership rules
