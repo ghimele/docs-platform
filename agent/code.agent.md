@@ -1,12 +1,7 @@
 ---
+name: code-prompt
 description: "Implements a spec task, enforcing coding standards and maintaining traceability back to the spec. Works across C++ and .NET components."
-mode: agent
-tools:
-  - codebase
-  - editFiles
-  - readFile
-  - runCommands
-  - terminalLastCommand
+tools: [vscode, execute, read, agent, edit, search, web, browser, todo]
 ---
 
 # code

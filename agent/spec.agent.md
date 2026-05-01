@@ -1,10 +1,7 @@
 ---
+name: spec-prompt
 description: "Guides a change from open question to verified implementation. Handles RFC, ADR, spec generation, design/architecture docs, and task breakdown — skipping steps not needed for the tier."
-mode: agent
-tools:
-  - codebase
-  - editFiles
-  - readFile
+tools: [vscode, read, edit, search, web, browser, todo]
 ---
 
 # spec
